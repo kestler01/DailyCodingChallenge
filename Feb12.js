@@ -63,10 +63,15 @@ const LCA = function ( nodeV, nodeW) {
 		// recursive function therefore start with base case - end of tree
 		if (node === null) {
 			return null
-			// if one of the children nodes are the target we return true
-		} else if (node.left === targetNode || node.right === targetNode) {
+			// if one of the children nodes OR the currentNode are the target we return true
+		} else if (node.left === targetNode || node.right === targetNode || node === targetNode) {
 			return true
-		} else {
+      // this pair of else if checks prevents us recurring over already checked subtrees
+		} else if(node.left === lastSubRoot ){
+      searchChildren(node.right)
+    } else if(node.right === lastSubRoot ) {
+      searchChildren(node.left)
+    } else {
 			// otherwise we keep searching the tree
 			searchChildren(node.left, targetNode)
 			searchChildren(node.right, targetNode)
@@ -78,10 +83,14 @@ const LCA = function ( nodeV, nodeW) {
     if (searchChildren(subRoot, target) === true) {
 			return subRoot
 		} else {
+      // cache the subroot so we know we've searched it and use it for searchChildren
+      // will allow it to avoid rechecking those nodes
+      lastSubRoot = subRoot
 			findLCA(subRoot.parent, target)
 		}
   }
 
+  let lastSubRoot = null
   return(findLCA( nodeV, nodeW))
   // if not, then go to nodeV parent, and check the other subtree to see if we find nodeW 
   // if not we to the next parent and check the next sub tree repeat until the root and if not found return null. (given valid input it WILL be found)
