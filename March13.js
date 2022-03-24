@@ -2,6 +2,9 @@
 // The robot starts at an unknown location in the room that is guaranteed to be empty, and you do not have access to the grid, but you can move the robot using the given API Robot.
 // You are tasked to use the robot to clean the entire room (i.e., clean every empty cell in the room). The robot with the four given APIs can move forward, turn left, or turn right. Each turn is 90 degrees.
 // When the robot tries to move into a wall cell, its bumper sensor detects the obstacle, and it stays on the current cell.
+
+const { clean } = require("underscore");
+
 // Design an algorithm to clean the entire room using the following APIs:
 interface Robot {
   // returns true if next cell is open and robot moves into the cell.
@@ -43,12 +46,13 @@ const cleanRoom = function () {
   let tempRun = 1
   let knownX = 1
   let knownY = 1
-  Robot.clean()// y or y cleans the cell.
+  let turnCounter = 0
+
   // helper function
-  const moveFindCorners= function () {
+  const moveFindCorners= function async () {
     
-    if(Robot.move()){ // may need to asycn the move helper function and await this api call 
-      // if api call return True
+    if(await Robot.move()){ // may need to asycn the move helper function and await this api call 
+      // if api call return True- position in db api has changed
       tempRun++
       if(facing==='Y' && tempRun>knownY ){
         knownY = tempRun
@@ -56,13 +60,12 @@ const cleanRoom = function () {
         knownX = tempRun
       }
       // clean this new cell
-      Robot.clean()
-      // move again!
-      move()
+      // Robot.clean() // if we want everything to be cleaned only once, we don't start right away
     } else {
-      // if api call returned False, we found a wall fo the room!
-      Robot.turnRight()
+      // if api call returned False, position in api db has not changed we found a wall fo the room!
+      await Robot.turnRight()
       // reset the run
+      turnCounter ++
       tempRun = 1
       // turn the facing so we know which direction we're moving
       if(facing === 'Y'){
@@ -71,10 +74,59 @@ const cleanRoom = function () {
         facing = 'Y'
       }
     }
+    // after the 4th turn we know we've found enough corners to have the dimensions of the room, return that value to be used by our spiral cleaner function 
+    // base case
+    if(turnCounter >= 4){ // (having the greater than here is a safety)
+      console.log(`after making 4 turns we KNOW we have found 3 corners, meaning that the dimensions of the room are ${knownX}x,${knownY}y`)
+      return ([knownX,knownY])
+    } else {
+      //recurse until we find the 3 corners
+      console.log("still finding corners")
+      moveFindCorners()
+    }
+  }
+
+  const cleanRunTurnRight = function(run){ //we move 'run' spaces 
+    for(let i=0; i<run; i++){
+      Robot.move()
+      Robot.clean()
+    }
+    Robot.turnRight()
+    if(facing === 'Y'){
+        facing = 'up'
+      } else if(facing==='up') {
+        facing='right'
+      } else if(facing==='right'){
+        facing='down'
+      } else if(facing==='down'){
+        facing='up'
+      }
+    return
+  }
+
+  moveFindCorners() // after this we know he dimensions and are in the bottom left corner facing up / 'y'
+  let x= knownX-1
+  let y= knownY
+
+    
+    
+  cleanRunTurnRight(y-1)// the -1 here takes into account our starting position 
+    x--
+  cleanRunTurnRight(x)
+    y--
+  while( y || x > 1){
+    cleanRunTurnRight(y)
+    x--
+    cleanRunTurnRight(x)
+    y--
+    // cleanRunTurnRight(y)
+    // x--
+    // cleanRunTurnRight(x)
+    // y--
+    
 
   }
 }
-
 
 // Note that the initial direction of the robot will be facing up. You can assume all four edges of the grid are all surrounded by a wall.
 // Custom testing:
